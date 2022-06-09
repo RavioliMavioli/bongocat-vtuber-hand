@@ -1,5 +1,5 @@
 #include "header.hpp"
-
+#include <iostream>
 namespace osu {
 Json::Value left_key_value, right_key_value, smoke_key_value, wave_key_value;
 int offset_x, offset_y;
@@ -7,7 +7,7 @@ int paw_r, paw_g, paw_b, paw_a;
 int paw_edge_r, paw_edge_g, paw_edge_b, paw_edge_a;
 double scale;
 bool is_mouse, is_left_handed, is_enable_toggle_smoke;
-sf::Sprite bg, up, left, right, device, smoke, wave;
+sf::Sprite bg, up, left, right, both, device, smoke, wave;
 
 int key_state = 0;
 
@@ -76,6 +76,7 @@ bool init() {
     up.setTexture(data::load_texture("img/osu/up.png"));
     left.setTexture(data::load_texture("img/osu/left.png"));
     right.setTexture(data::load_texture("img/osu/right.png"));
+    both.setTexture(data::load_texture("img/osu/both.png"));
     wave.setTexture(data::load_texture("img/osu/wave.png"));
     if (is_mouse) {
         bg.setTexture(data::load_texture("img/osu/mousebg.png"));
@@ -172,6 +173,7 @@ void draw() {
     }
 
     // drawing arms
+    /*
     sf::VertexArray fill(sf::TriangleStrip, 26);
     for (int i = 0; i < 26; i += 2) {
         fill[i].position = sf::Vector2f(pss2[i], pss2[i + 1]);
@@ -239,9 +241,11 @@ void draw() {
     circ2.setRadius(width / 2);
     circ2.setPosition(pss2[50] - width / 2, pss2[51] - width / 2);
     window.draw(circ2);
-
+    */
     // drawing keypresses
     bool left_key = false;
+    bool right_key = false;
+    int last_keystate = 0;
 
     for (Json::Value &v : left_key_value) {
         if (input::is_pressed(v.asInt())) {
@@ -249,34 +253,35 @@ void draw() {
             break;
         }
     }
-
-    if (left_key) {
-        if (!left_key_state) {
-            key_state = 1;
-            left_key_state = true;
-        }
-    } else {
-        left_key_state = false;
-    }
-
-    bool right_key = false;
-
+    
     for (Json::Value &v : right_key_value) {
         if (input::is_pressed(v.asInt())) {
             right_key = true;
             break;
         }
     }
+    
+    if (left_key) {
+        if (!left_key_state) {
+            key_state = 1;
+            last_keystate = 1;
+            left_key_state = true;
+        }
+    } else {
+        left_key_state = false;
+    }
 
     if (right_key) {
         if (!right_key_state) {
             key_state = 2;
+            last_keystate = 2;
             right_key_state = true;
         }
     } else {
         right_key_state = false;
     }
-    
+
+
     bool wave_key = false;
 
     for (Json::Value &v : wave_key_value) {
@@ -295,11 +300,25 @@ void draw() {
         wave_key_state = false;
     }
 
+    
+
     if (!left_key_state && !right_key_state && !wave_key_state) {
         key_state = 0;
         window.draw(up);
     }
-
+    if (left_key == true && right_key == true){
+        if (left_key_state == true && right_key_state == true)
+        {
+            key_state = 10;
+            window.draw(both);
+            left_key_state = false;
+            right_key_state = false;
+        }
+        else {
+            key_state = last_keystate;
+        }
+    }
+    //std::cout << key_state << std::endl;
     if (key_state == 1) {
         if ((clock() - std::max(timer_right_key, timer_wave_key)) / CLOCKS_PER_SEC > BONGO_KEYPRESS_THRESHOLD) {
             if (!is_left_handed) {
@@ -330,7 +349,6 @@ void draw() {
             window.draw(up);
         }
     }
-
     // drawing tablet
     if (!is_mouse) {
         window.draw(device);
